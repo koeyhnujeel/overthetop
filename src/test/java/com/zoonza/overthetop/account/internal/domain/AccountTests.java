@@ -15,8 +15,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class AccountTests {
-
     private static final Email EMAIL = new Email("member@example.com");
+    private static final Instant NOW = AccountFixture.SAVED_AT.plusSeconds(60);
 
     @Nested
     class 가입 {
@@ -27,16 +27,13 @@ class AccountTests {
         void 계정을_생성한다() {
             when(passwordEncoder.encode("password")).thenReturn("encoded-password");
 
-            Instant before = Instant.now();
+            Account account = Account.register(EMAIL, "password", NOW, passwordEncoder);
 
-            Account account = Account.register(EMAIL, "password", passwordEncoder);
-
-            Instant after = Instant.now();
             assertThat(account.getEmail()).isEqualTo(EMAIL);
             assertThat(account.getEncodedPassword()).isEqualTo("encoded-password");
             assertThat(account.getProfiles()).isEmpty();
-            assertThat(account.getCreatedAt()).isBetween(before, after);
-            assertThat(account.getUpdatedAt()).isEqualTo(account.getCreatedAt());
+            assertThat(account.getCreatedAt()).isEqualTo(NOW);
+            assertThat(account.getUpdatedAt()).isEqualTo(NOW);
         }
 
         @Test
@@ -44,7 +41,7 @@ class AccountTests {
             when(passwordEncoder.encode("password")).thenReturn("encoded-password");
 
             assertThatNullPointerException()
-                    .isThrownBy(() -> Account.register(null, "password", passwordEncoder))
+                    .isThrownBy(() -> Account.register(null, "password", NOW, passwordEncoder))
                     .withMessage("계정 이메일은 필수입니다.");
         }
 
@@ -53,7 +50,7 @@ class AccountTests {
             when(passwordEncoder.encode("password")).thenReturn(null);
 
             assertThatNullPointerException()
-                    .isThrownBy(() -> Account.register(EMAIL, "password", passwordEncoder))
+                    .isThrownBy(() -> Account.register(EMAIL, "password", NOW, passwordEncoder))
                     .withMessage("계정 비밀번호는 필수입니다.");
         }
     }
@@ -118,13 +115,15 @@ class AccountTests {
             Account account = AccountFixture.savedAccount();
             ProfileName name = new ProfileName("프로필1");
 
-            account.addProfile(name, "icon-1");
+            account.addProfile(name, "icon-1", NOW);
 
             assertThat(account.getProfiles()).singleElement().satisfies(profile -> {
                 assertThat(profile.getName()).isEqualTo(name);
                 assertThat(profile.getIconRef()).isEqualTo("icon-1");
+                assertThat(profile.getCreatedAt()).isEqualTo(NOW);
+                assertThat(profile.getUpdatedAt()).isEqualTo(NOW);
             });
-            assertThat(account.getUpdatedAt()).isAfter(AccountFixture.SAVED_AT);
+            assertThat(account.getUpdatedAt()).isEqualTo(NOW);
             assertThat(account.getCreatedAt()).isEqualTo(AccountFixture.SAVED_AT);
         }
 
@@ -133,7 +132,7 @@ class AccountTests {
             Account account = AccountFixture.savedAccount();
 
             for (int i = 1; i <= 5; i++) {
-                account.addProfile(new ProfileName("프로필" + i), "icon-" + i);
+                account.addProfile(new ProfileName("프로필" + i), "icon-" + i, NOW);
             }
 
             assertThat(account.getProfiles()).hasSize(5);
@@ -144,14 +143,14 @@ class AccountTests {
             Account account = AccountFixture.savedAccount();
 
             for (int i = 1; i <= 5; i++) {
-                account.addProfile(new ProfileName("프로필" + i), "icon-" + i);
+                account.addProfile(new ProfileName("프로필" + i), "icon-" + i, NOW);
             }
 
             List<Profile> profilesBefore = List.copyOf(account.getProfiles());
             Instant updatedAtBefore = account.getUpdatedAt();
 
             assertThatIllegalStateException()
-                    .isThrownBy(() -> account.addProfile(new ProfileName("프로필6"), "icon-6"))
+                    .isThrownBy(() -> account.addProfile(new ProfileName("프로필6"), "icon-6", NOW.plusSeconds(1)))
                     .withMessage("프로필은 최대 5개까지 생성할 수 있습니다.");
 
             assertThat(account.getProfiles()).containsExactlyElementsOf(profilesBefore);
@@ -164,7 +163,7 @@ class AccountTests {
             Account account = AccountFixture.savedAccount(original);
 
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> account.addProfile(new ProfileName("프로필1"), "icon-2"))
+                    .isThrownBy(() -> account.addProfile(new ProfileName("프로필1"), "icon-2", NOW))
                     .withMessage("이미 사용 중인 프로필 이름입니다.");
 
             assertThat(account.getProfiles()).containsExactly(original);
@@ -182,10 +181,10 @@ class AccountTests {
             Account account = AccountFixture.savedAccount(first, second);
             ProfileName newName = new ProfileName("새이름");
 
-            account.renameProfile(2000L, newName);
+            account.renameProfile(2000L, newName, NOW);
 
             assertThat(second.getName()).isEqualTo(newName);
-            assertThat(second.getUpdatedAt()).isAfter(ProfileFixture.SAVED_AT);
+            assertThat(second.getUpdatedAt()).isEqualTo(NOW);
             assertThat(first.getName()).isEqualTo(new ProfileName("프로필1"));
             assertThat(first.getUpdatedAt()).isEqualTo(ProfileFixture.SAVED_AT);
             assertThat(account.getUpdatedAt()).isEqualTo(AccountFixture.SAVED_AT);
@@ -196,7 +195,7 @@ class AccountTests {
             Profile profile = ProfileFixture.savedProfile(1000L, "프로필1");
             Account account = AccountFixture.savedAccount(profile);
 
-            account.renameProfile(1000L, new ProfileName("프로필1"));
+            account.renameProfile(1000L, new ProfileName("프로필1"), NOW);
 
             assertThat(profile.getName()).isEqualTo(new ProfileName("프로필1"));
             assertThat(profile.getUpdatedAt()).isEqualTo(ProfileFixture.SAVED_AT);
@@ -210,7 +209,7 @@ class AccountTests {
             Account account = AccountFixture.savedAccount(first, second);
 
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> account.renameProfile(1000L, new ProfileName("프로필2")))
+                    .isThrownBy(() -> account.renameProfile(1000L, new ProfileName("프로필2"), NOW))
                     .withMessage("이미 사용 중인 프로필 이름입니다.");
 
             assertThat(first.getName()).isEqualTo(new ProfileName("프로필1"));
@@ -226,7 +225,7 @@ class AccountTests {
             Account account = AccountFixture.savedAccount(profile);
 
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> account.renameProfile(2000L, new ProfileName("새이름")))
+                    .isThrownBy(() -> account.renameProfile(2000L, new ProfileName("새이름"), NOW))
                     .withMessage("프로필을 찾을 수 없습니다.");
 
             assertThat(profile.getName()).isEqualTo(new ProfileName("프로필1"));
@@ -244,10 +243,10 @@ class AccountTests {
             Profile second = ProfileFixture.savedProfile(2000L, "프로필2");
             Account account = AccountFixture.savedAccount(first, second);
 
-            account.changeProfileIcon(2000L, "new-icon");
+            account.changeProfileIcon(2000L, "new-icon", NOW);
 
             assertThat(second.getIconRef()).isEqualTo("new-icon");
-            assertThat(second.getUpdatedAt()).isAfter(ProfileFixture.SAVED_AT);
+            assertThat(second.getUpdatedAt()).isEqualTo(NOW);
             assertThat(first.getIconRef()).isEqualTo("icon-1000");
             assertThat(first.getUpdatedAt()).isEqualTo(ProfileFixture.SAVED_AT);
             assertThat(account.getUpdatedAt()).isEqualTo(AccountFixture.SAVED_AT);
@@ -259,7 +258,7 @@ class AccountTests {
             Account account = AccountFixture.savedAccount(profile);
 
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> account.changeProfileIcon(2000L, "new-icon"))
+                    .isThrownBy(() -> account.changeProfileIcon(2000L, "new-icon", NOW))
                     .withMessage("프로필을 찾을 수 없습니다.");
 
             assertThat(profile.getIconRef()).isEqualTo("icon-1000");
@@ -277,10 +276,10 @@ class AccountTests {
             Profile second = ProfileFixture.savedProfile(2000L, "프로필2");
             Account account = AccountFixture.savedAccount(first, second);
 
-            account.removeProfile(2000L);
+            account.removeProfile(2000L, NOW);
 
             assertThat(account.getProfiles()).containsExactly(first);
-            assertThat(account.getUpdatedAt()).isAfter(AccountFixture.SAVED_AT);
+            assertThat(account.getUpdatedAt()).isEqualTo(NOW);
             assertThat(account.getCreatedAt()).isEqualTo(AccountFixture.SAVED_AT);
             assertThat(first.getUpdatedAt()).isEqualTo(ProfileFixture.SAVED_AT);
         }
@@ -290,7 +289,7 @@ class AccountTests {
             Profile profile = ProfileFixture.savedProfile(1000L, "프로필1");
             Account account = AccountFixture.savedAccount(profile);
 
-            account.removeProfile(2000L);
+            account.removeProfile(2000L, NOW);
 
             assertThat(account.getProfiles()).containsExactly(profile);
             assertThat(account.getUpdatedAt()).isEqualTo(AccountFixture.SAVED_AT);
@@ -300,10 +299,10 @@ class AccountTests {
         void 이미_삭제한_프로필을_다시_삭제하면_아무것도_바뀌지_않는다() {
             Profile profile = ProfileFixture.savedProfile(1000L, "프로필1");
             Account account = AccountFixture.savedAccount(profile);
-            account.removeProfile(1000L);
+            account.removeProfile(1000L, NOW);
             Instant updatedAtAfterRemoval = account.getUpdatedAt();
 
-            account.removeProfile(1000L);
+            account.removeProfile(1000L, NOW.plusSeconds(1));
 
             assertThat(account.getProfiles()).isEmpty();
             assertThat(account.getUpdatedAt()).isEqualTo(updatedAtAfterRemoval);
@@ -313,9 +312,9 @@ class AccountTests {
         void 삭제한_프로필의_이름을_다시_사용할_수_있다() {
             Profile profile = ProfileFixture.savedProfile(1000L, "프로필1");
             Account account = AccountFixture.savedAccount(profile);
-            account.removeProfile(1000L);
+            account.removeProfile(1000L, NOW);
 
-            account.addProfile(new ProfileName("프로필1"), "new-icon");
+            account.addProfile(new ProfileName("프로필1"), "new-icon", NOW.plusSeconds(1));
 
             assertThat(account.getProfiles()).singleElement().satisfies(addedProfile -> {
                 assertThat(addedProfile.getName()).isEqualTo(new ProfileName("프로필1"));

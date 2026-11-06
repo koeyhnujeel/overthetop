@@ -34,12 +34,12 @@ public class Account {
     public static Account register(
             Email email,
             String rawPassword,
+            Instant createdAt,
             PasswordEncoder passwordEncoder
     ) {
         String passwordHash = passwordEncoder.encode(rawPassword);
-        Instant now = Instant.now();
 
-        return new Account(email, passwordHash, now, now);
+        return new Account(email, passwordHash, createdAt, createdAt);
     }
 
     public boolean verifyPassword(String rawPassword, PasswordEncoder passwordEncoder) {
@@ -51,53 +51,53 @@ public class Account {
         this.updatedAt = Instant.now();
     }
 
-    public void addProfile(ProfileName profileName, String iconRef) {
+    public void addProfile(ProfileName profileName, String iconRef, Instant now) {
         if (this.profiles.size() >= MAX_PROFILE_COUNT) {
             throw new IllegalStateException("프로필은 최대 5개까지 생성할 수 있습니다.");
         }
 
-        validateUniqueProfileName(profileName);
+        ensureUniqueProfileName(profileName);
 
-        Profile newProfile = Profile.create(profileName,  iconRef);
+        Profile newProfile = Profile.create(profileName,  iconRef, now);
 
         this.profiles.add(newProfile);
-        this.updatedAt = Instant.now();
+        this.updatedAt = now;
     }
 
-    public void renameProfile(Long profileId, ProfileName newName) {
-        Profile profile = requireProfile(profileId);
+    public void renameProfile(Long profileId, ProfileName newName, Instant now) {
+        Profile profileToRename = getProfile(profileId);
 
-        if (profile.matchesName(newName)) {
+        if (profileToRename.matchesName(newName)) {
             return;
         }
 
-        validateUniqueProfileName(newName);
+        ensureUniqueProfileName(newName);
 
-        profile.rename(newName);
+        profileToRename.rename(newName, now);
     }
 
-    public void changeProfileIcon(Long profileId, String newIconRef) {
-        Profile profile = requireProfile(profileId);
+    public void changeProfileIcon(Long profileId, String newIconRef, Instant now) {
+        Profile profileToChange = getProfile(profileId);
 
-        profile.changeIcon(newIconRef);
+        profileToChange.changeIcon(newIconRef, now);
     }
 
-    public void removeProfile(Long profileId) {
+    public void removeProfile(Long profileId, Instant now) {
         boolean removed = this.profiles.removeIf(profile -> profile.matchesId(profileId));
 
         if (removed) {
-            this.updatedAt = Instant.now();
+            this.updatedAt = now;
         }
     }
 
-    private Profile requireProfile(Long profileId) {
+    private Profile getProfile(Long profileId) {
         return this.profiles.stream()
                 .filter(profile -> profile.matchesId(profileId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("프로필을 찾을 수 없습니다."));
     }
 
-    private void validateUniqueProfileName(ProfileName name) {
+    private void ensureUniqueProfileName(ProfileName name) {
         boolean duplicated = this.profiles.stream()
                 .anyMatch(profile -> profile.matchesName(name));
 

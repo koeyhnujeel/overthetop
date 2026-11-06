@@ -14,10 +14,8 @@ public final class ProfileFixture {
     }
 
     public static Profile savedProfile(Long id, String name) {
-        Profile profile = Profile.create(new ProfileName(name), "icon-" + id);
+        Profile profile = Profile.create(new ProfileName(name), "icon-" + id, SAVED_AT);
         ReflectionTestUtils.setField(profile, "id", id);
-        ReflectionTestUtils.setField(profile, "createdAt", SAVED_AT);
-        ReflectionTestUtils.setField(profile, "updatedAt", SAVED_AT);
         return profile;
     }
 }

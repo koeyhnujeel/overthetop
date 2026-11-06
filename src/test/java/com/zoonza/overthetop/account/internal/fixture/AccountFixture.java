@@ -25,10 +25,8 @@ public final class AccountFixture {
         PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
         when(passwordEncoder.encode("password")).thenReturn(ENCODED_PASSWORD);
 
-        Account account = Account.register(new Email("member@example.com"), "password", passwordEncoder);
+        Account account = Account.register(new Email("member@example.com"), "password", SAVED_AT, passwordEncoder);
         ReflectionTestUtils.setField(account, "id", 1L);
-        ReflectionTestUtils.setField(account, "createdAt", SAVED_AT);
-        ReflectionTestUtils.setField(account, "updatedAt", SAVED_AT);
         ReflectionTestUtils.setField(account, "profiles", new ArrayList<>(List.of(profiles)));
         return account;
     }

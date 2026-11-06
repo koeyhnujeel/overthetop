@@ -27,10 +27,8 @@ public class Profile {
         this.updatedAt = requireNonNull(updatedAt, "프로필 수정 시각은 필수입니다.");
     }
 
-    public static Profile create(ProfileName name, String iconRef) {
-        Instant now = Instant.now();
-
-        return new Profile(name, iconRef, now, now);
+    public static Profile create(ProfileName name, String iconRef, Instant createdAt) {
+        return new Profile(name, iconRef, createdAt, createdAt);
     }
 
     public boolean matchesId(Long profileId) {
@@ -41,13 +39,13 @@ public class Profile {
         return this.name.equals(name);
     }
 
-    public void rename(ProfileName newName) {
+    public void rename(ProfileName newName, Instant now) {
         this.name = newName;
-        this.updatedAt = Instant.now();
+        this.updatedAt = now;
     }
 
-    public void changeIcon(String newIconRef) {
+    public void changeIcon(String newIconRef, Instant now) {
         this.iconRef = newIconRef;
-        this.updatedAt = Instant.now();
+        this.updatedAt = now;
     }
 }
