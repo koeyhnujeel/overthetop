@@ -31,15 +31,11 @@ public class Account {
         this.updatedAt = requireNonNull(updatedAt, "계정 수정 시각은 필수입니다.");
     }
 
-    public static Account register(
-            Email email,
-            String rawPassword,
-            Instant createdAt,
-            PasswordEncoder passwordEncoder
-    ) {
+    public static Account register(Email email, String rawPassword, PasswordEncoder passwordEncoder) {
+        Instant now = Instant.now();
         String passwordHash = passwordEncoder.encode(rawPassword);
 
-        return new Account(email, passwordHash, createdAt, createdAt);
+        return new Account(email, passwordHash, now, now);
     }
 
     public boolean verifyPassword(String rawPassword, PasswordEncoder passwordEncoder) {
@@ -51,20 +47,21 @@ public class Account {
         this.updatedAt = Instant.now();
     }
 
-    public void addProfile(ProfileName profileName, String iconRef, Instant now) {
+    public void addProfile(ProfileName profileName, String iconRef) {
         if (this.profiles.size() >= MAX_PROFILE_COUNT) {
             throw new IllegalStateException("프로필은 최대 5개까지 생성할 수 있습니다.");
         }
 
         ensureUniqueProfileName(profileName);
 
+        Instant now = Instant.now();
         Profile newProfile = Profile.create(profileName,  iconRef, now);
 
         this.profiles.add(newProfile);
         this.updatedAt = now;
     }
 
-    public void renameProfile(Long profileId, ProfileName newName, Instant now) {
+    public void renameProfile(Long profileId, ProfileName newName) {
         Profile profileToRename = getProfile(profileId);
 
         if (profileToRename.matchesName(newName)) {
@@ -73,13 +70,13 @@ public class Account {
 
         ensureUniqueProfileName(newName);
 
-        profileToRename.rename(newName, now);
+        profileToRename.rename(newName);
     }
 
-    public void changeProfileIcon(Long profileId, String newIconRef, Instant now) {
+    public void changeProfileIcon(Long profileId, String newIconRef) {
         Profile profileToChange = getProfile(profileId);
 
-        profileToChange.changeIcon(newIconRef, now);
+        profileToChange.changeIcon(newIconRef);
     }
 
     public void removeProfile(Long profileId, Instant now) {

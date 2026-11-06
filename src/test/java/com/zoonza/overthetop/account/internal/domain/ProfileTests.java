@@ -12,31 +12,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 class ProfileTests {
-    private static final Instant NOW = ProfileFixture.SAVED_AT.plusSeconds(60);
+    private static final Instant CREATED_AT = ProfileFixture.SAVED_AT.plusSeconds(60);
 
     @Test
     void 프로필을_생성한다() {
         ProfileName name = new ProfileName("프로필1");
 
-        Profile profile = Profile.create(name, "icon-1", NOW);
+        Profile profile = Profile.create(name, "icon-1", CREATED_AT);
 
         assertThat(profile.getName()).isEqualTo(name);
         assertThat(profile.getIconRef()).isEqualTo("icon-1");
-        assertThat(profile.getCreatedAt()).isEqualTo(NOW);
-        assertThat(profile.getUpdatedAt()).isEqualTo(NOW);
+        assertThat(profile.getCreatedAt()).isEqualTo(CREATED_AT);
+        assertThat(profile.getUpdatedAt()).isEqualTo(CREATED_AT);
     }
 
     @Test
     void 이름_없이_프로필을_생성할_수_없다() {
         assertThatNullPointerException()
-                .isThrownBy(() -> Profile.create(null, "icon-1", NOW))
+                .isThrownBy(() -> Profile.create(null, "icon-1", CREATED_AT))
                 .withMessage("프로필 이름은 필수입니다.");
     }
 
     @Test
     void 아이콘_없이_프로필을_생성할_수_없다() {
         assertThatNullPointerException()
-                .isThrownBy(() -> Profile.create(new ProfileName("프로필1"), null, NOW))
+                .isThrownBy(() -> Profile.create(new ProfileName("프로필1"), null, CREATED_AT))
                 .withMessage("프로필 아이콘은 필수입니다.");
     }
 
@@ -58,14 +58,14 @@ class ProfileTests {
 
     @Test
     void ID가_없는_프로필은_값이_있는_ID와_일치하지_않는다() {
-        Profile profile = Profile.create(new ProfileName("프로필1"), "icon-1", NOW);
+        Profile profile = Profile.create(new ProfileName("프로필1"), "icon-1", CREATED_AT);
 
         assertThat(profile.matchesId(1000L)).isFalse();
     }
 
     @Test
     void 같은_이름의_프로필인지_확인한다() {
-        Profile profile = Profile.create(new ProfileName("프로필1"), "icon-1", NOW);
+        Profile profile = Profile.create(new ProfileName("프로필1"), "icon-1", CREATED_AT);
 
         assertThat(profile.matchesName(new ProfileName("프로필1"))).isTrue();
         assertThat(profile.matchesName(new ProfileName("프로필2"))).isFalse();
@@ -77,10 +77,12 @@ class ProfileTests {
         Profile profile = ProfileFixture.savedProfile(1000L, "프로필1");
         ProfileName newName = new ProfileName("새이름");
 
-        profile.rename(newName, NOW);
+        Instant before = Instant.now();
+        profile.rename(newName);
+        Instant after = Instant.now();
 
         assertThat(profile.getName()).isEqualTo(newName);
-        assertThat(profile.getUpdatedAt()).isEqualTo(NOW);
+        assertThat(profile.getUpdatedAt()).isBetween(before, after);
         assertThat(profile.getCreatedAt()).isEqualTo(ProfileFixture.SAVED_AT);
         assertThat(profile.getIconRef()).isEqualTo("icon-1000");
     }
@@ -89,10 +91,12 @@ class ProfileTests {
     void 프로필_아이콘을_변경한다() {
         Profile profile = ProfileFixture.savedProfile(1000L, "프로필1");
 
-        profile.changeIcon("new-icon", NOW);
+        Instant before = Instant.now();
+        profile.changeIcon("new-icon");
+        Instant after = Instant.now();
 
         assertThat(profile.getIconRef()).isEqualTo("new-icon");
-        assertThat(profile.getUpdatedAt()).isEqualTo(NOW);
+        assertThat(profile.getUpdatedAt()).isBetween(before, after);
         assertThat(profile.getCreatedAt()).isEqualTo(ProfileFixture.SAVED_AT);
         assertThat(profile.getName()).isEqualTo(new ProfileName("프로필1"));
     }

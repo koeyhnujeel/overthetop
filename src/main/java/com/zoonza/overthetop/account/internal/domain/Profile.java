@@ -39,13 +39,13 @@ public class Profile {
         return this.name.equals(name);
     }
 
-    public void rename(ProfileName newName, Instant now) {
+    public void rename(ProfileName newName) {
         this.name = newName;
-        this.updatedAt = now;
+        this.updatedAt = Instant.now();
     }
 
-    public void changeIcon(String newIconRef, Instant now) {
+    public void changeIcon(String newIconRef) {
         this.iconRef = newIconRef;
-        this.updatedAt = now;
+        this.updatedAt = Instant.now();
     }
 }
